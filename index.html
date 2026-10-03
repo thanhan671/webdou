@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="WebDou" />
+  <title>WebDou — Car Split Browser</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="app" class="app" data-orientation="horizontal">
+    <header class="topbar">
+      <div class="brand" aria-label="WebDou">
+        <span class="brand-mark">◫</span>
+        <span class="brand-name">WebDou</span>
+      </div>
+
+      <div class="preset-group" aria-label="Tỉ lệ chia màn hình">
+        <button class="top-btn preset" data-ratio="70" title="70 / 30">70/30</button>
+        <button class="top-btn preset" data-ratio="60" title="60 / 40">60/40</button>
+        <button class="top-btn preset active" data-ratio="50" title="50 / 50">50/50</button>
+        <button class="top-btn preset" data-ratio="40" title="40 / 60">40/60</button>
+        <button class="top-btn preset" data-ratio="30" title="30 / 70">30/70</button>
+      </div>
+
+      <div class="top-actions">
+        <button id="orientationBtn" class="top-btn icon-btn" title="Đổi ngang / dọc">↕</button>
+        <button id="swapBtn" class="top-btn icon-btn" title="Đổi hai bên">⇄</button>
+        <button id="focusBtn" class="top-btn" title="Đưa pane đang chọn lên 70%">Focus</button>
+        <button id="lockBtn" class="top-btn icon-btn" title="Ẩn giao diện điều khiển">🔒</button>
+        <button id="fullscreenBtn" class="top-btn icon-btn" title="Toàn màn hình">⛶</button>
+        <button id="settingsBtn" class="top-btn icon-btn" title="Cài đặt">⚙</button>
+      </div>
+    </header>
+
+    <main id="workspace" class="workspace">
+      <section class="pane active-pane" data-pane="left" aria-label="Cửa sổ trái">
+        <div class="pane-toolbar">
+          <button class="pane-btn quick-btn" data-pane-action="quick" title="Truy cập nhanh">☰</button>
+          <button class="pane-btn" data-pane-action="back" title="Quay lại">←</button>
+          <button class="pane-btn" data-pane-action="reload" title="Tải lại">↻</button>
+          <form class="url-form" data-pane-form="left">
+            <input class="url-input" data-pane-url="left" autocomplete="off" spellcheck="false" placeholder="Nhập URL, link YouTube hoặc nội dung cần tìm…" />
+            <button class="go-btn" type="submit">Đi</button>
+          </form>
+          <button class="pane-btn" data-pane-action="home" title="Trang nhanh">⌂</button>
+          <button class="pane-btn" data-pane-action="expand" title="Phóng to pane">⤢</button>
+          <button class="pane-btn" data-pane-action="external" title="Mở ngoài">↗</button>
+        </div>
+
+        <div class="pane-content" data-pane-content="left">
+          <div class="launcher" data-launcher="left"></div>
+          <iframe class="web-frame hidden" data-frame="left" title="Khung web bên trái" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; geolocation; clipboard-read; clipboard-write" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+          <div class="frame-status hidden" data-frame-status="left">
+            <div class="status-card">
+              <div class="status-icon">↗</div>
+              <h3>Trang này có thể không cho phép nhúng</h3>
+              <p>Một số website chặn iframe vì lý do bảo mật. Bạn vẫn có thể mở trang đó ở cửa sổ trình duyệt riêng.</p>
+              <button class="primary-btn" data-pane-action="external">Mở trực tiếp</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" tabindex="0">
+        <span class="splitter-grip">⋮</span>
+      </div>
+
+      <section class="pane" data-pane="right" aria-label="Cửa sổ phải">
+        <div class="pane-toolbar">
+          <button class="pane-btn quick-btn" data-pane-action="quick" title="Truy cập nhanh">☰</button>
+          <button class="pane-btn" data-pane-action="back" title="Quay lại">←</button>
+          <button class="pane-btn" data-pane-action="reload" title="Tải lại">↻</button>
+          <form class="url-form" data-pane-form="right">
+            <input class="url-input" data-pane-url="right" autocomplete="off" spellcheck="false" placeholder="Nhập URL, link YouTube hoặc nội dung cần tìm…" />
+            <button class="go-btn" type="submit">Đi</button>
+          </form>
+          <button class="pane-btn" data-pane-action="home" title="Trang nhanh">⌂</button>
+          <button class="pane-btn" data-pane-action="expand" title="Phóng to pane">⤢</button>
+          <button class="pane-btn" data-pane-action="external" title="Mở ngoài">↗</button>
+        </div>
+
+        <div class="pane-content" data-pane-content="right">
+          <div class="launcher" data-launcher="right"></div>
+          <iframe class="web-frame hidden" data-frame="right" title="Khung web bên phải" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; geolocation; clipboard-read; clipboard-write" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+          <div class="frame-status hidden" data-frame-status="right">
+            <div class="status-card">
+              <div class="status-icon">↗</div>
+              <h3>Trang này có thể không cho phép nhúng</h3>
+              <p>Một số website chặn iframe vì lý do bảo mật. Bạn vẫn có thể mở trang đó ở cửa sổ trình duyệt riêng.</p>
+              <button class="primary-btn" data-pane-action="external">Mở trực tiếp</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <button id="unlockBtn" class="unlock-btn hidden" title="Mở khóa giao diện">🔓</button>
+  </div>
+
+  <div id="quickSheet" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="sheet">
+      <div class="sheet-head">
+        <div>
+          <div class="eyebrow">TRUY CẬP NHANH</div>
+          <h2 id="quickTitle">Mở ở bên trái</h2>
+        </div>
+        <button class="close-btn" data-close-modal="quickSheet">✕</button>
+      </div>
+      <div id="quickGrid" class="quick-grid"></div>
+      <div class="favorites-head">
+        <span>Yêu thích</span>
+        <button id="addFavoriteBtn" class="text-btn">+ Thêm</button>
+      </div>
+      <div id="favoriteGrid" class="favorite-grid"></div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="sheet settings-sheet">
+      <div class="sheet-head">
+        <div>
+          <div class="eyebrow">CÀI ĐẶT</div>
+          <h2>WebDou</h2>
+        </div>
+        <button class="close-btn" data-close-modal="settingsModal">✕</button>
+      </div>
+
+      <div class="settings-grid">
+        <label class="setting-card">
+          <span class="setting-title">Tỉ lệ mặc định</span>
+          <select id="defaultRatioSelect">
+            <option value="70">70 / 30</option>
+            <option value="60">60 / 40</option>
+            <option value="50">50 / 50</option>
+            <option value="40">40 / 60</option>
+            <option value="30">30 / 70</option>
+          </select>
+        </label>
+
+        <label class="setting-card">
+          <span class="setting-title">Bố cục</span>
+          <select id="defaultOrientationSelect">
+            <option value="auto">Tự động theo màn hình</option>
+            <option value="horizontal">Trái / phải</option>
+            <option value="vertical">Trên / dưới</option>
+          </select>
+        </label>
+
+        <label class="setting-card wide">
+          <span class="setting-title">Google Maps API key <small>(không bắt buộc)</small></span>
+          <input id="mapsKeyInput" type="password" placeholder="Dùng cho Maps Embed API nâng cao" />
+          <span class="setting-help">Nếu chưa có key, WebDou dùng chế độ tìm kiếm Google Maps nhúng cơ bản.</span>
+        </label>
+
+        <label class="setting-card wide">
+          <span class="setting-title">YouTube Data API key <small>(tùy chọn)</small></span>
+          <input id="youtubeKeyInput" type="password" placeholder="Dành cho tìm kiếm YouTube tích hợp ở phiên bản sau" />
+          <span class="setting-help">Nên giới hạn API key theo HTTP referrer nếu triển khai công khai.</span>
+        </label>
+
+        <label class="setting-card toggle-row">
+          <span>
+            <span class="setting-title">Tự ẩn thanh điều khiển khi Lock</span>
+            <span class="setting-help">Giữ màn hình gọn khi đang chạy.</span>
+          </span>
+          <input id="autoHideToggle" type="checkbox" checked />
+        </label>
+
+        <label class="setting-card toggle-row">
+          <span>
+            <span class="setting-title">Focus pane khi chạm</span>
+            <span class="setting-help">Nút Focus sẽ ưu tiên pane đang chọn.</span>
+          </span>
+          <input id="focusOnTapToggle" type="checkbox" checked />
+        </label>
+      </div>
+
+      <div class="settings-actions">
+        <button id="resetBtn" class="danger-btn">Khôi phục mặc định</button>
+        <button id="saveSettingsBtn" class="primary-btn">Lưu cài đặt</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="favoriteModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="dialog">
+      <div class="sheet-head">
+        <div>
+          <div class="eyebrow">YÊU THÍCH</div>
+          <h2>Thêm lối tắt</h2>
+        </div>
+        <button class="close-btn" data-close-modal="favoriteModal">✕</button>
+      </div>
+      <form id="favoriteForm" class="favorite-form">
+        <label>Tên<input id="favoriteName" required maxlength="40" placeholder="Ví dụ: VTV, Netflix, Radio…" /></label>
+        <label>URL<input id="favoriteUrl" required placeholder="https://..." /></label>
+        <label>Biểu tượng<input id="favoriteIcon" maxlength="4" value="★" placeholder="★" /></label>
+        <button type="submit" class="primary-btn">Lưu yêu thích</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
