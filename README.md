@@ -52,3 +52,11 @@ WebDou xử lý riêng link YouTube video/playlist và Google Maps để tăng k
 ## API keys
 
 API key được lưu cục bộ trong trình duyệt bằng `localStorage`. Nếu triển khai công khai, chỉ dùng browser key đã giới hạn theo HTTP referrer/domain và giới hạn API phù hợp.
+
+
+## WebDou v2
+
+- Google Maps opens immediately inside the selected pane with its own search bar and current-location button.
+- YouTube opens immediately as an in-pane browser/search experience instead of asking for a pasted link.
+- YouTube search/browse uses the official YouTube Data API; add a restricted API key once in Settings. Direct YouTube video/playlist links still play without a Data API key.
+- First launch defaults to Maps on the left and YouTube on the right.

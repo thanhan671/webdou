@@ -1,10 +1,11 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'webdou.state.v1';
+  const STORAGE_KEY = 'webdou.state.v2';
+
   const DEFAULT_STATE = {
-    ratio: 50,
-    defaultRatio: 50,
+    ratio: 65,
+    defaultRatio: 65,
     orientation: 'auto',
     locked: false,
     activePane: 'left',
@@ -14,8 +15,16 @@
     focusOnTap: true,
     expandedPane: null,
     panes: {
-      left: { url: '', history: [], historyIndex: -1, mode: 'launcher' },
-      right: { url: '', history: [], historyIndex: -1, mode: 'launcher' }
+      left: {
+        url: 'webdou://maps', history: [], historyIndex: -1, mode: 'maps',
+        mapQuery: '', mapLat: null, mapLng: null, mapView: 'map',
+        youtubeQuery: '', youtubeVideoId: '', youtubeResults: []
+      },
+      right: {
+        url: 'webdou://youtube', history: [], historyIndex: -1, mode: 'youtube',
+        mapQuery: '', mapLat: null, mapLng: null, mapView: 'map',
+        youtubeQuery: '', youtubeVideoId: '', youtubeResults: []
+      }
     },
     favorites: [
       { id: 'fav-radio', name: 'Radio Garden', url: 'https://radio.garden/', icon: '📻' },
@@ -24,10 +33,10 @@
   };
 
   const QUICK_APPS = [
-    { id: 'maps', label: 'Google Maps', icon: '🗺️', desc: 'Bản đồ / tìm địa điểm', action: 'maps' },
-    { id: 'youtube', label: 'YouTube', icon: '▶️', desc: 'Video, phim, hoạt hình', action: 'youtube' },
-    { id: 'ytmusic', label: 'YouTube Music', icon: '🎵', desc: 'Mở nhanh dịch vụ nhạc', url: 'https://music.youtube.com/' },
-    { id: 'spotify', label: 'Spotify', icon: '🟢', desc: 'Spotify Web Player', url: 'https://open.spotify.com/' },
+    { id: 'maps', label: 'Google Maps', icon: '🗺️', desc: 'Mở bản đồ ngay, tìm kiếm trong pane', action: 'maps' },
+    { id: 'youtube', label: 'YouTube', icon: '▶️', desc: 'Mở trình duyệt YouTube trong pane', action: 'youtube' },
+    { id: 'ytmusic', label: 'YouTube Music', icon: '🎵', desc: 'Thử mở YouTube Music Web', url: 'https://music.youtube.com/' },
+    { id: 'spotify', label: 'Spotify', icon: '🟢', desc: 'Thử mở Spotify Web Player', url: 'https://open.spotify.com/' },
     { id: 'google', label: 'Google', icon: '🔎', desc: 'Tìm kiếm web', url: 'https://www.google.com/' },
     { id: 'custom', label: 'Website', icon: '🌐', desc: 'Nhập địa chỉ bất kỳ', action: 'custom' },
     { id: 'blank', label: 'Trang nhanh', icon: '⌂', desc: 'Quay lại màn hình lối tắt', action: 'home' },
@@ -91,11 +100,9 @@
     app.style.setProperty('--split', `${normalizeRatio(state.ratio)}%`);
     splitter.setAttribute('aria-orientation', orientation === 'horizontal' ? 'vertical' : 'horizontal');
     $$('.preset').forEach(btn => btn.classList.toggle('active', Number(btn.dataset.ratio) === Number(state.ratio)));
-
     $$('.pane').forEach(p => p.classList.toggle('active-pane', p.dataset.pane === state.activePane));
     app.classList.toggle('locked', !!state.locked);
     $('#unlockBtn').classList.toggle('hidden', !state.locked);
-
     $$('.pane').forEach(p => p.classList.toggle('expanded', state.expandedPane === p.dataset.pane));
     document.body.classList.toggle('pane-expanded', !!state.expandedPane);
   }
@@ -106,8 +113,17 @@
       input: $(`[data-pane-url="${pane}"]`),
       frame: $(`[data-frame="${pane}"]`),
       launcher: $(`[data-launcher="${pane}"]`),
+      service: $(`[data-service-shell="${pane}"]`),
       status: $(`[data-frame-status="${pane}"]`)
     };
+  }
+
+  function hidePaneSurfaces(pane) {
+    const els = paneEls(pane);
+    els.launcher.classList.add('hidden');
+    els.service.classList.add('hidden');
+    els.frame.classList.add('hidden');
+    els.status.classList.add('hidden');
   }
 
   function renderLauncher(pane) {
@@ -115,8 +131,8 @@
     el.innerHTML = `
       <div class="launcher-wrap">
         <div class="launcher-kicker">WEBDOU · ${pane === 'left' ? 'BÊN TRÁI' : 'BÊN PHẢI'}</div>
-        <h1>Chọn nội dung để mở</h1>
-        <p>Chạm vào lối tắt. Mỗi bên hoạt động độc lập và ghi nhớ trạng thái riêng.</p>
+        <h1>Chạm là mở ngay</h1>
+        <p>Google Maps và YouTube mở thành giao diện riêng ngay trong cửa sổ, không hỏi điểm đến và không yêu cầu dán link.</p>
         <div class="launcher-grid">
           ${QUICK_APPS.slice(0,6).map(item => `
             <button class="launcher-card" data-launcher-action="${item.action || 'url'}" data-launcher-url="${item.url || ''}">
@@ -127,7 +143,7 @@
           `).join('')}
         </div>
         <div class="launcher-note">
-          <strong>Lưu ý:</strong> một số website chặn việc hiển thị trong iframe. Với các trang đó, dùng nút ↗ để mở trực tiếp trong trình duyệt. YouTube video/playlist và Google Maps được WebDou xử lý theo dạng nhúng riêng khi có thể.
+          <strong>Web thuần có giới hạn:</strong> website nào cấm iframe sẽ không thể trở thành một tab Chrome đầy đủ trong nửa màn hình. Với Maps/YouTube, WebDou dùng giao diện tích hợp để thao tác trực tiếp trong pane.
         </div>
       </div>`;
 
@@ -140,20 +156,27 @@
   }
 
   function showLauncher(pane) {
+    hidePaneSurfaces(pane);
     const els = paneEls(pane);
     state.panes[pane].mode = 'launcher';
+    state.panes[pane].url = '';
     els.launcher.classList.remove('hidden');
-    els.frame.classList.add('hidden');
-    els.status.classList.add('hidden');
+    setUrlInput(pane, '');
     saveState();
   }
 
   function showFrame(pane) {
+    hidePaneSurfaces(pane);
     const els = paneEls(pane);
     state.panes[pane].mode = 'frame';
-    els.launcher.classList.add('hidden');
     els.frame.classList.remove('hidden');
-    els.status.classList.add('hidden');
+  }
+
+  function showServiceShell(pane, mode) {
+    hidePaneSurfaces(pane);
+    const els = paneEls(pane);
+    state.panes[pane].mode = mode;
+    els.service.classList.remove('hidden');
   }
 
   function setUrlInput(pane, value) {
@@ -177,20 +200,18 @@
       const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
       const host = u.hostname.replace(/^www\./, '');
       if (!['youtube.com', 'm.youtube.com', 'youtu.be', 'music.youtube.com'].includes(host)) return null;
-
       let videoId = '';
       if (host === 'youtu.be') videoId = u.pathname.split('/').filter(Boolean)[0] || '';
       if (u.pathname === '/watch') videoId = u.searchParams.get('v') || '';
       if (u.pathname.startsWith('/shorts/')) videoId = u.pathname.split('/')[2] || '';
       if (u.pathname.startsWith('/embed/')) videoId = u.pathname.split('/')[2] || '';
       const list = u.searchParams.get('list') || '';
-
       if (videoId) {
         const qs = new URLSearchParams({ autoplay: '1', playsinline: '1', rel: '0' });
         if (list) qs.set('list', list);
-        return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?${qs.toString()}`;
+        return { type: 'video', videoId, embed: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?${qs.toString()}` };
       }
-      if (list) return `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}&playsinline=1`;
+      if (list) return { type: 'playlist', videoId: '', embed: `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(list)}&playsinline=1` };
       return null;
     } catch {
       return null;
@@ -200,7 +221,7 @@
   function parseGoogleMaps(raw) {
     try {
       const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
-      if (!/(^|\.)google\.[^/]+$/.test(u.hostname) && !/(^|\.)google\.com$/.test(u.hostname) && !/(^|\.)maps\.app\.goo\.gl$/.test(u.hostname)) return null;
+      if (!/(^|\.)google\.[^/]+$/.test(u.hostname) && !/(^|\.)maps\.app\.goo\.gl$/.test(u.hostname)) return null;
       if (!u.pathname.includes('/maps') && u.hostname !== 'maps.google.com') return null;
       if (u.searchParams.get('output') === 'embed' || u.pathname.includes('/maps/embed')) return u.toString();
       const q = u.searchParams.get('q');
@@ -213,7 +234,7 @@
 
   function transformForEmbed(raw) {
     const yt = parseYouTube(raw);
-    if (yt) return { displayUrl: raw, frameUrl: yt, kind: 'youtube' };
+    if (yt) return { displayUrl: raw, frameUrl: yt.embed, kind: 'youtube' };
     const gm = parseGoogleMaps(raw);
     if (gm) return { displayUrl: raw, frameUrl: gm, kind: 'maps' };
     const normalized = ensureUrl(raw);
@@ -235,13 +256,25 @@
     if (!value) return showLauncher(pane);
     selectPane(pane);
 
+    const yt = parseYouTube(value);
+    if (yt) {
+      openYouTubeApp(pane, { videoId: yt.videoId || '', embedUrl: yt.embed });
+      return;
+    }
+
+    if (/google\.[^/]+\/maps|maps\.google|maps\.app\.goo\.gl/i.test(value)) {
+      openMapsApp(pane);
+      const q = extractMapQuery(value);
+      if (q) mapSearch(pane, q);
+      return;
+    }
+
     const result = transformForEmbed(value);
     const els = paneEls(pane);
     if (pushHistory) addHistory(pane, result.displayUrl);
     state.panes[pane].url = result.displayUrl;
     setUrlInput(pane, result.displayUrl);
     showFrame(pane);
-
     els.frame.src = result.frameUrl;
     els.frame.dataset.kind = result.kind;
     saveState();
@@ -255,6 +288,13 @@
 
   function goBack(pane) {
     const p = state.panes[pane];
+    if (p.mode === 'youtube' && p.youtubeVideoId) {
+      p.youtubeVideoId = '';
+      renderYouTubeApp(pane);
+      saveState();
+      return;
+    }
+    if (p.mode === 'maps' || p.mode === 'youtube') return showLauncher(pane);
     if (p.historyIndex <= 0) return showLauncher(pane);
     p.historyIndex -= 1;
     const url = p.history[p.historyIndex];
@@ -263,51 +303,344 @@
   }
 
   function reloadPane(pane) {
+    const p = state.panes[pane];
+    if (p.mode === 'maps') return renderMapsApp(pane);
+    if (p.mode === 'youtube') return renderYouTubeApp(pane);
     const els = paneEls(pane);
-    if (state.panes[pane].mode !== 'frame' || !els.frame.src) return;
+    if (p.mode !== 'frame' || !els.frame.src) return;
     els.frame.src = els.frame.src;
   }
 
   function externalOpen(pane) {
-    const url = state.panes[pane].url;
-    if (!url) return;
+    const p = state.panes[pane];
+    let url = p.url;
+    if (p.mode === 'maps') {
+      url = p.mapQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.mapQuery)}` : 'https://www.google.com/maps';
+    } else if (p.mode === 'youtube') {
+      url = p.youtubeVideoId ? `https://www.youtube.com/watch?v=${encodeURIComponent(p.youtubeVideoId)}` : 'https://www.youtube.com/';
+    }
+    if (!url || url.startsWith('webdou://')) return;
     window.open(ensureUrl(url), '_blank', 'noopener,noreferrer');
   }
 
-  function promptMaps(pane) {
-    const q = window.prompt('Nhập địa điểm cần mở trên Google Maps:');
-    if (!q) return;
-    const embed = state.mapsKey
-      ? `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(state.mapsKey)}&q=${encodeURIComponent(q)}`
-      : `https://www.google.com/maps?q=${encodeURIComponent(q)}&output=embed`;
-    const els = paneEls(pane);
-    const display = `https://www.google.com/maps/search/${encodeURIComponent(q)}`;
-    addHistory(pane, display);
-    state.panes[pane].url = display;
-    setUrlInput(pane, display);
-    showFrame(pane);
-    els.frame.src = embed;
-    els.frame.dataset.kind = 'maps';
+  function extractMapQuery(raw) {
+    try {
+      const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+      return u.searchParams.get('q') || u.searchParams.get('query') || '';
+    } catch {
+      return '';
+    }
+  }
+
+  function mapEmbedUrl(pane) {
+    const p = state.panes[pane];
+    if (p.mapLat != null && p.mapLng != null && !p.mapQuery) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(`${p.mapLat},${p.mapLng}`)}&z=16&output=embed`;
+    }
+    const query = p.mapQuery || 'Vietnam';
+    if (state.mapsKey) {
+      return `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(state.mapsKey)}&q=${encodeURIComponent(query)}&zoom=14`;
+    }
+    return `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+  }
+
+  function openMapsApp(pane) {
+    selectPane(pane);
+    const p = state.panes[pane];
+    p.mode = 'maps';
+    p.url = 'webdou://maps';
+    setUrlInput(pane, 'Google Maps');
+    showServiceShell(pane, 'maps');
+    renderMapsApp(pane);
     saveState();
   }
 
-  function promptYouTube(pane) {
-    const input = window.prompt('Dán link video/playlist YouTube. Nếu nhập từ khóa, WebDou sẽ mở trang tìm kiếm YouTube ở tab riêng vì trang tìm kiếm YouTube không cho nhúng trực tiếp:');
-    if (!input) return;
-    const yt = parseYouTube(input);
-    if (yt) return navigate(pane, input);
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(input)}`;
-    state.panes[pane].url = searchUrl;
-    setUrlInput(pane, searchUrl);
+  function renderMapsApp(pane) {
+    const p = state.panes[pane];
+    const root = paneEls(pane).service;
+    root.innerHTML = `
+      <div class="service-browser maps-browser">
+        <div class="service-nav">
+          <div class="service-brand"><span>🗺️</span><strong>Maps</strong></div>
+          <form class="service-search" data-map-search-form="${pane}">
+            <input data-map-search-input="${pane}" value="${escapeAttr(p.mapQuery || '')}" placeholder="Tìm địa điểm, địa chỉ, quán ăn…" autocomplete="off" />
+            <button type="submit">Tìm</button>
+          </form>
+          <button class="service-icon-btn" data-map-location="${pane}" title="Vị trí hiện tại">◎</button>
+          <button class="service-icon-btn" data-map-external="${pane}" title="Mở Google Maps đầy đủ">↗</button>
+        </div>
+        <div class="service-body map-body">
+          <iframe class="service-map-frame" data-map-frame="${pane}" src="${mapEmbedUrl(pane)}" allow="geolocation" referrerpolicy="no-referrer-when-downgrade" title="Google Maps"></iframe>
+          <div class="service-hint">Tìm trực tiếp ở thanh phía trên. Nút ◎ dùng vị trí của thiết bị khi trình duyệt cho phép.</div>
+        </div>
+      </div>`;
+
+    $(`[data-map-search-form="${pane}"]`, root).addEventListener('submit', e => {
+      e.preventDefault();
+      const q = $(`[data-map-search-input="${pane}"]`, root).value.trim();
+      if (q) mapSearch(pane, q);
+    });
+    $(`[data-map-location="${pane}"]`, root).addEventListener('click', () => locateMap(pane));
+    $(`[data-map-external="${pane}"]`, root).addEventListener('click', () => externalOpen(pane));
+  }
+
+  function mapSearch(pane, query) {
+    const p = state.panes[pane];
+    p.mapQuery = String(query || '').trim();
+    p.mapLat = null;
+    p.mapLng = null;
+    p.url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.mapQuery)}`;
+    setUrlInput(pane, p.url);
+    const frame = $(`[data-map-frame="${pane}"]`, paneEls(pane).service);
+    const input = $(`[data-map-search-input="${pane}"]`, paneEls(pane).service);
+    if (input) input.value = p.mapQuery;
+    if (frame) frame.src = mapEmbedUrl(pane);
     saveState();
-    window.open(searchUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  function locateMap(pane) {
+    if (!navigator.geolocation) return showServiceToast(pane, 'Trình duyệt này không hỗ trợ lấy vị trí.');
+    showServiceToast(pane, 'Đang lấy vị trí…', 1200);
+    navigator.geolocation.getCurrentPosition(pos => {
+      const p = state.panes[pane];
+      p.mapLat = Number(pos.coords.latitude.toFixed(6));
+      p.mapLng = Number(pos.coords.longitude.toFixed(6));
+      p.mapQuery = '';
+      p.url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p.mapLat},${p.mapLng}`)}`;
+      setUrlInput(pane, p.url);
+      renderMapsApp(pane);
+      saveState();
+    }, err => {
+      showServiceToast(pane, err.code === 1 ? 'Bạn chưa cấp quyền vị trí cho trình duyệt.' : 'Không lấy được vị trí hiện tại.');
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 });
+  }
+
+  function openYouTubeApp(pane, options = {}) {
+    selectPane(pane);
+    const p = state.panes[pane];
+    p.mode = 'youtube';
+    p.url = 'webdou://youtube';
+    if (options.videoId) p.youtubeVideoId = options.videoId;
+    p.youtubeEmbedUrl = options.embedUrl || '';
+    setUrlInput(pane, p.youtubeVideoId ? `https://www.youtube.com/watch?v=${p.youtubeVideoId}` : 'YouTube');
+    showServiceShell(pane, 'youtube');
+    renderYouTubeApp(pane);
+    saveState();
+    if (!p.youtubeVideoId && state.youtubeKey && !p.youtubeResults.length) loadPopularYouTube(pane);
+  }
+
+  function renderYouTubeApp(pane) {
+    const p = state.panes[pane];
+    const root = paneEls(pane).service;
+    const hasKey = !!state.youtubeKey;
+
+    if (p.youtubeVideoId || p.youtubeEmbedUrl) {
+      const embed = p.youtubeEmbedUrl || `https://www.youtube-nocookie.com/embed/${encodeURIComponent(p.youtubeVideoId)}?autoplay=1&playsinline=1&rel=0`;
+      root.innerHTML = `
+        <div class="service-browser youtube-browser">
+          <div class="service-nav">
+            <button class="service-icon-btn" data-youtube-back="${pane}" title="Quay lại kết quả">←</button>
+            <div class="service-brand youtube"><span>▶</span><strong>YouTube</strong></div>
+            <form class="service-search" data-youtube-search-form="${pane}">
+              <input data-youtube-search-input="${pane}" value="${escapeAttr(p.youtubeQuery || '')}" placeholder="Tìm video, phim, hoạt hình…" autocomplete="off" />
+              <button type="submit">Tìm</button>
+            </form>
+            <button class="service-icon-btn" data-youtube-external="${pane}" title="Mở trên YouTube">↗</button>
+          </div>
+          <div class="youtube-player-wrap">
+            <iframe class="youtube-player" src="${embed}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="YouTube player"></iframe>
+          </div>
+        </div>`;
+      bindYouTubeNav(pane, root);
+      return;
+    }
+
+    root.innerHTML = `
+      <div class="service-browser youtube-browser">
+        <div class="service-nav">
+          <div class="service-brand youtube"><span>▶</span><strong>YouTube</strong></div>
+          <form class="service-search" data-youtube-search-form="${pane}">
+            <input data-youtube-search-input="${pane}" value="${escapeAttr(p.youtubeQuery || '')}" placeholder="Tìm video, phim, hoạt hình…" autocomplete="off" />
+            <button type="submit">Tìm</button>
+          </form>
+          <button class="service-icon-btn" data-youtube-popular="${pane}" title="Video phổ biến">★</button>
+          <button class="service-icon-btn" data-youtube-external="${pane}" title="Mở YouTube đầy đủ">↗</button>
+        </div>
+        <div class="youtube-results" data-youtube-results="${pane}">
+          ${hasKey ? renderYouTubeResults(p.youtubeResults) : renderYouTubeKeyNotice()}
+        </div>
+      </div>`;
+
+    bindYouTubeNav(pane, root);
+    $$('[data-video-id]', root).forEach(card => card.addEventListener('click', () => playYouTubeVideo(pane, card.dataset.videoId)));
+    const settingsBtn = $('[data-open-youtube-settings]', root);
+    if (settingsBtn) settingsBtn.addEventListener('click', () => { loadSettingsForm(); openModal('settingsModal'); });
+  }
+
+  function bindYouTubeNav(pane, root) {
+    const form = $(`[data-youtube-search-form="${pane}"]`, root);
+    if (form) form.addEventListener('submit', e => {
+      e.preventDefault();
+      const value = $(`[data-youtube-search-input="${pane}"]`, root).value.trim();
+      if (!value) return;
+      const parsed = parseYouTube(value);
+      if (parsed) {
+        const p = state.panes[pane];
+        p.youtubeVideoId = parsed.videoId || '';
+        p.youtubeEmbedUrl = parsed.embed;
+        renderYouTubeApp(pane);
+        saveState();
+        return;
+      }
+      searchYouTube(pane, value);
+    });
+    const back = $(`[data-youtube-back="${pane}"]`, root);
+    if (back) back.addEventListener('click', () => {
+      const p = state.panes[pane];
+      p.youtubeVideoId = '';
+      p.youtubeEmbedUrl = '';
+      renderYouTubeApp(pane);
+      saveState();
+    });
+    const popular = $(`[data-youtube-popular="${pane}"]`, root);
+    if (popular) popular.addEventListener('click', () => loadPopularYouTube(pane));
+    const ext = $(`[data-youtube-external="${pane}"]`, root);
+    if (ext) ext.addEventListener('click', () => externalOpen(pane));
+  }
+
+  function renderYouTubeKeyNotice() {
+    return `
+      <div class="youtube-empty">
+        <div class="youtube-empty-icon">▶</div>
+        <h3>YouTube đã mở</h3>
+        <p>Để tìm và duyệt video ngay trong nửa màn hình, nhập <strong>YouTube Data API key</strong> một lần trong Cài đặt. Sau đó bạn chỉ việc gõ từ khóa như trên ứng dụng YouTube, không cần dán link.</p>
+        <button class="primary-btn" data-open-youtube-settings>Cài API key</button>
+        <small>Link video/playlist vẫn có thể dán trực tiếp vào ô tìm kiếm phía trên và phát ngay mà không cần API key.</small>
+      </div>`;
+  }
+
+  function renderYouTubeResults(results) {
+    if (!results || !results.length) {
+      return `<div class="youtube-empty compact"><div class="youtube-empty-icon">▶</div><h3>Tìm video ngay tại đây</h3><p>Nhập tên phim, bài hát hoặc hoạt hình ở thanh tìm kiếm phía trên.</p></div>`;
+    }
+    return `<div class="video-grid">${results.map(item => `
+      <button class="video-card" data-video-id="${escapeAttr(item.videoId)}">
+        <span class="video-thumb-wrap"><img src="${escapeAttr(item.thumbnail)}" alt="" loading="lazy" /><span class="video-play">▶</span></span>
+        <span class="video-title">${escapeHtml(item.title)}</span>
+        <span class="video-channel">${escapeHtml(item.channelTitle || '')}</span>
+      </button>`).join('')}</div>`;
+  }
+
+  async function searchYouTube(pane, query) {
+    const p = state.panes[pane];
+    p.youtubeQuery = query;
+    p.youtubeVideoId = '';
+    p.youtubeEmbedUrl = '';
+    if (!state.youtubeKey) {
+      renderYouTubeApp(pane);
+      return;
+    }
+    setYouTubeLoading(pane, `Đang tìm “${query}”…`);
+    try {
+      const params = new URLSearchParams({
+        part: 'snippet', type: 'video', maxResults: '18', q: query,
+        key: state.youtubeKey, safeSearch: 'moderate', relevanceLanguage: getLanguageCode()
+      });
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error?.message || 'YouTube API error');
+      p.youtubeResults = (data.items || []).map(x => ({
+        videoId: x.id?.videoId || '',
+        title: x.snippet?.title || 'Video',
+        channelTitle: x.snippet?.channelTitle || '',
+        thumbnail: x.snippet?.thumbnails?.medium?.url || x.snippet?.thumbnails?.default?.url || ''
+      })).filter(x => x.videoId);
+      saveState();
+      renderYouTubeApp(pane);
+    } catch (err) {
+      setYouTubeError(pane, err.message || 'Không tải được kết quả YouTube.');
+    }
+  }
+
+  async function loadPopularYouTube(pane) {
+    const p = state.panes[pane];
+    if (!state.youtubeKey) return renderYouTubeApp(pane);
+    p.youtubeQuery = '';
+    p.youtubeVideoId = '';
+    p.youtubeEmbedUrl = '';
+    setYouTubeLoading(pane, 'Đang tải video phổ biến…');
+    try {
+      const params = new URLSearchParams({
+        part: 'snippet', chart: 'mostPopular', maxResults: '18',
+        regionCode: getRegionCode(), key: state.youtubeKey
+      });
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error?.message || 'YouTube API error');
+      p.youtubeResults = (data.items || []).map(x => ({
+        videoId: x.id || '',
+        title: x.snippet?.title || 'Video',
+        channelTitle: x.snippet?.channelTitle || '',
+        thumbnail: x.snippet?.thumbnails?.medium?.url || x.snippet?.thumbnails?.default?.url || ''
+      })).filter(x => x.videoId);
+      saveState();
+      renderYouTubeApp(pane);
+    } catch (err) {
+      setYouTubeError(pane, err.message || 'Không tải được video phổ biến.');
+    }
+  }
+
+  function setYouTubeLoading(pane, text) {
+    const root = paneEls(pane).service;
+    const results = $(`[data-youtube-results="${pane}"]`, root);
+    if (results) results.innerHTML = `<div class="youtube-empty compact"><div class="loading-ring"></div><p>${escapeHtml(text)}</p></div>`;
+  }
+
+  function setYouTubeError(pane, message) {
+    const root = paneEls(pane).service;
+    const results = $(`[data-youtube-results="${pane}"]`, root);
+    if (results) results.innerHTML = `<div class="youtube-empty compact"><div class="youtube-empty-icon">!</div><h3>Không tải được YouTube</h3><p>${escapeHtml(message)}</p><button class="primary-btn" data-open-youtube-settings>Cài đặt API key</button></div>`;
+    const settingsBtn = $('[data-open-youtube-settings]', root);
+    if (settingsBtn) settingsBtn.addEventListener('click', () => { loadSettingsForm(); openModal('settingsModal'); });
+  }
+
+  function playYouTubeVideo(pane, videoId) {
+    const p = state.panes[pane];
+    p.youtubeVideoId = videoId;
+    p.youtubeEmbedUrl = '';
+    p.url = `https://www.youtube.com/watch?v=${videoId}`;
+    setUrlInput(pane, p.url);
+    renderYouTubeApp(pane);
+    saveState();
+  }
+
+  function getLanguageCode() {
+    const lang = String(navigator.language || 'vi').split('-')[0].toLowerCase();
+    return /^[a-z]{2}$/.test(lang) ? lang : 'vi';
+  }
+
+  function getRegionCode() {
+    const parts = String(navigator.language || 'vi-VN').split('-');
+    const region = parts.find(x => /^[A-Z]{2}$/.test(x));
+    return region || 'VN';
+  }
+
+  function showServiceToast(pane, message, duration = 2600) {
+    const root = paneEls(pane).service;
+    const old = $('.service-toast', root);
+    if (old) old.remove();
+    const toast = document.createElement('div');
+    toast.className = 'service-toast';
+    toast.textContent = message;
+    root.appendChild(toast);
+    setTimeout(() => toast.remove(), duration);
   }
 
   function runQuickAction(pane, action, url = '') {
     closeModal('quickSheet');
     switch (action) {
-      case 'maps': return promptMaps(pane);
-      case 'youtube': return promptYouTube(pane);
+      case 'maps': return openMapsApp(pane);
+      case 'youtube': return openYouTubeApp(pane);
       case 'custom': paneEls(pane).input.focus(); return;
       case 'home': return showLauncher(pane);
       case 'external': return externalOpen(pane);
@@ -325,7 +658,6 @@
         <span class="quick-label">${item.label}</span>
         <span class="quick-desc">${item.desc}</span>
       </button>`).join('');
-
     $$('[data-quick-action]', grid).forEach(btn => btn.addEventListener('click', () => runQuickAction(quickPane, btn.dataset.quickAction, btn.dataset.quickUrl)));
     renderFavorites();
   }
@@ -360,6 +692,10 @@
 
   function escapeHtml(v) {
     return String(v).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  }
+
+  function escapeAttr(v) {
+    return escapeHtml(v).replace(/`/g, '&#96;');
   }
 
   function openModal(id) {
@@ -414,7 +750,7 @@
       if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
       else await document.exitFullscreen();
     } catch {
-      // Some embedded browsers do not expose the Fullscreen API.
+      // Một số browser trong màn hình xe không hỗ trợ Fullscreen API.
     }
   }
 
@@ -444,6 +780,10 @@
     saveState();
     applyLayout();
     closeModal('settingsModal');
+    if (state.panes.left.mode === 'youtube') openYouTubeApp('left');
+    if (state.panes.right.mode === 'youtube') openYouTubeApp('right');
+    if (state.panes.left.mode === 'maps') openMapsApp('left');
+    if (state.panes.right.mode === 'maps') openMapsApp('right');
   }
 
   function resetState() {
@@ -456,6 +796,8 @@
 
   function restorePane(pane) {
     const p = state.panes[pane];
+    if (p.mode === 'maps') return openMapsApp(pane);
+    if (p.mode === 'youtube') return openYouTubeApp(pane, { videoId: p.youtubeVideoId || '', embedUrl: p.youtubeEmbedUrl || '' });
     setUrlInput(pane, p.url || '');
     if (p.mode === 'frame' && p.url) navigate(pane, p.url, { pushHistory: false });
     else showLauncher(pane);
@@ -466,6 +808,7 @@
     renderLauncher('right');
     restorePane('left');
     restorePane('right');
+    selectPane(state.activePane || 'left');
     applyLayout();
   }
 

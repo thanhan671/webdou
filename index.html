@@ -55,6 +55,7 @@
 
         <div class="pane-content" data-pane-content="left">
           <div class="launcher" data-launcher="left"></div>
+          <div class="service-shell hidden" data-service-shell="left"></div>
           <iframe class="web-frame hidden" data-frame="left" title="Khung web bên trái" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; geolocation; clipboard-read; clipboard-write" referrerpolicy="strict-origin-when-cross-origin"></iframe>
           <div class="frame-status hidden" data-frame-status="left">
             <div class="status-card">
@@ -87,6 +88,7 @@
 
         <div class="pane-content" data-pane-content="right">
           <div class="launcher" data-launcher="right"></div>
+          <div class="service-shell hidden" data-service-shell="right"></div>
           <iframe class="web-frame hidden" data-frame="right" title="Khung web bên phải" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; geolocation; clipboard-read; clipboard-write" referrerpolicy="strict-origin-when-cross-origin"></iframe>
           <div class="frame-status hidden" data-frame-status="right">
             <div class="status-card">
@@ -160,8 +162,8 @@
 
         <label class="setting-card wide">
           <span class="setting-title">YouTube Data API key <small>(tùy chọn)</small></span>
-          <input id="youtubeKeyInput" type="password" placeholder="Dành cho tìm kiếm YouTube tích hợp ở phiên bản sau" />
-          <span class="setting-help">Nên giới hạn API key theo HTTP referrer nếu triển khai công khai.</span>
+          <input id="youtubeKeyInput" type="password" placeholder="Dùng cho tìm kiếm YouTube trực tiếp ngay trong từng cửa sổ" />
+          <span class="setting-help">Nhập một lần, sau đó bấm YouTube sẽ mở ngay giao diện tìm kiếm/video. Nên giới hạn key theo HTTP referrer.</span>
         </label>
 
         <label class="setting-card toggle-row">
