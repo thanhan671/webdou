@@ -60,3 +60,11 @@ API key được lưu cục bộ trong trình duyệt bằng `localStorage`. N�
 - YouTube opens immediately as an in-pane browser/search experience instead of asking for a pasted link.
 - YouTube search/browse uses the official YouTube Data API; add a restricted API key once in Settings. Direct YouTube video/playlist links still play without a Data API key.
 - First launch defaults to Maps on the left and YouTube on the right.
+
+
+## WebDou v3
+
+- Maps có 2 chế độ: **Bản đồ** và **🧭 Dẫn đường**. Ở Dẫn đường, nhập điểm đến và bấm **Đi**; WebDou xin vị trí hiện tại của thiết bị rồi dựng tuyến.
+- Nếu có Google Maps Embed API key, route dùng Embed API chính thức. Nếu không có key, WebDou dùng URL nhúng tương thích và nút ↗ luôn mở tuyến chính thức trên Google Maps.
+- Tìm kiếm YouTube không còn bắt buộc API key. Nếu chưa cấu hình YouTube Data API key, WebDou thử các Invidious public instance được công bố để lấy kết quả; nếu tất cả nguồn dự phòng lỗi, có nút mở cùng truy vấn trực tiếp trên YouTube.
+- GitHub Pages chạy HTTPS nên trình duyệt có thể cấp quyền Geolocation; nhớ cho phép Location cho site WebDou trên đầu xe.

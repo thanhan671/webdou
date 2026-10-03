@@ -204,3 +204,31 @@ body.pane-expanded .topbar { visibility: hidden; }
   .video-grid { grid-template-columns: repeat(auto-fill,minmax(150px,1fr)); gap: 10px; }
   .youtube-results { padding: 9px; }
 }
+
+
+/* WebDou v3: Maps Navigation + resilient YouTube search */
+.maps-service-nav { flex-wrap: nowrap; }
+.service-tabs { display: inline-flex; flex: 0 0 auto; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 11px; background: #091019; }
+.service-tab { min-height: 32px; border: 0; border-radius: 8px; padding: 0 9px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.service-tab.active { background: #1b3752; color: #fff; }
+.nav-search { min-width: 120px; }
+.nav-route-status { position: absolute; left: 10px; top: 10px; z-index: 4; display: flex; align-items: center; gap: 8px; max-width: min(620px,calc(100% - 20px)); padding: 8px 10px; border: 1px solid #3c4b5a; border-radius: 11px; background: rgba(9,15,22,.9); color: #dbe7f3; font-size: 11px; backdrop-filter: blur(7px); }
+.nav-route-status.ready { border-color: #2d6849; background: rgba(8,31,20,.9); }
+.nav-route-icon { display: grid; place-items: center; flex: 0 0 auto; width: 23px; height: 23px; border-radius: 50%; background: #17314a; color: #a9d2ff; font-weight: 900; }
+.nav-route-status.ready .nav-route-icon { background: #1c603d; color: #d6ffe7; }
+.youtube-provider { margin: 0 0 10px; color: var(--muted); font-size: 11px; }
+.youtube-error-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.secondary-btn { min-height: 42px; border: 1px solid var(--line-2); border-radius: 11px; padding: 0 16px; background: #121b25; color: var(--text); cursor: pointer; font-weight: 800; }
+
+@media (max-width: 960px) {
+  .maps-service-nav .service-brand strong { display: none; }
+  .service-tabs { gap: 2px; }
+  .service-tab { padding: 0 7px; font-size: 10px; }
+}
+
+@media (max-width: 620px) {
+  .maps-service-nav .service-tabs { max-width: 108px; }
+  .maps-service-nav .service-tab { padding: 0 5px; }
+  .maps-service-nav .service-tab:first-child { display: none; }
+  .nav-route-status { top: 8px; font-size: 10px; }
+}

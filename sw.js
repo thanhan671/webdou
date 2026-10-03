@@ -1,4 +1,4 @@
-const CACHE = 'webdou-shell-v2';
+const CACHE = 'webdou-shell-v3';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './manifest.webmanifest', './assets/icon.svg'];
 
 self.addEventListener('install', event => {
